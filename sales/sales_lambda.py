@@ -19,6 +19,7 @@ clients_table = dynamodb.Table('Clients')
 products_table = dynamodb.Table('Products')
 sales_notes_table = dynamodb.Table('SalesNotes')
 sales_note_items_table = dynamodb.Table('SalesNoteItems')
+addresses_table = dynamodb.Table('Addresses')
 
 BUCKET_NAME = '750924-esi3898k-examen2'
 NOTIFICATIONS_LAMBDA_NAME = 'notifications'
@@ -34,6 +35,23 @@ def lambda_handler(event, context):
                 required_fields = ['ClienteID', 'DireccionFacturacionID', 'DireccionEnvioID']
                 if not all(field in body for field in required_fields):
                     return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
+
+                client_resp = clients_table.get_item(Key={'ID': body['ClienteID']})
+                if 'Item' not in client_resp:
+                    return {'statusCode': 400, 'body': json.dumps({'error': f"Client {body['ClienteID']} not found"})}
+
+                billing_addr_resp = addresses_table.get_item(Key={'ID': body['DireccionFacturacionID']})
+                if 'Item' not in billing_addr_resp:
+                    return {'statusCode': 400, 'body': json.dumps({'error': f"Billing Address {body['DireccionFacturacionID']} not found"})}
+                if billing_addr_resp['Item'].get('TipoDireccion') != 'Facturacion':
+                    return {'statusCode': 400, 'body': json.dumps({'error': f"Address {body['DireccionFacturacionID']} is not a billing address"})}
+
+                shipping_addr_resp = addresses_table.get_item(Key={'ID': body['DireccionEnvioID']})
+                if 'Item' not in shipping_addr_resp:
+                    return {'statusCode': 400, 'body': json.dumps({'error': f"Shipping Address {body['DireccionEnvioID']} not found"})}
+                if shipping_addr_resp['Item'].get('TipoDireccion') != 'Envio':
+                    return {'statusCode': 400, 'body': json.dumps({'error': f"Address {body['DireccionEnvioID']} is not a shipping address"})}
+
 
                 note_id = str(uuid.uuid4())
                 folio = str(uuid.uuid4())[:8]
