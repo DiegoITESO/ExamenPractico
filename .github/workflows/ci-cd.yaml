@@ -5,12 +5,16 @@ on:
     branches: [ main ]
 
 jobs:
-  CD:
+  deploy:
     runs-on: ubuntu-latest
 
     permissions:
       id-token: write
       contents: read
+
+    strategy:
+      matrix:
+        lambda: [catalogs, notifications, sales]
 
     steps:
       - name: Checkout
@@ -21,42 +25,20 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN}}
-          aws-region: ${{ secrets.AWS_REGION}}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build & Push catalogs
-        working-directory: ./catalogs
+      - name: Build & Push image
+        working-directory: ./${{ matrix.lambda }}
         run: |
-          IMAGE="${{ steps.ecr.outputs.registry }}/catalogs:${{ github.sha }}"
+          IMAGE="${{ steps.ecr.outputs.registry }}/${{ matrix.lambda }}:${{ github.sha }}"
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
           aws lambda update-function-code \
-            --function-name catalogs \
-            --image-uri "$IMAGE"
-            --region ${{ secrets.AWS_REGION}}
-
-      - name: Build & Push notifications
-        working-directory: ./notifications
-        run: |
-          IMAGE="${{ steps.ecr.outputs.registry }}/notifications:${{ github.sha }}"
-          docker build -t "$IMAGE" .
-          docker push "$IMAGE"
-          aws lambda update-function-code \
-            --function-name notifications \
-            --image-uri "$IMAGE"
-            --region ${{ secrets.AWS_REGION}}
-
-      - name: Build & Push sales
-        working-directory: ./sales
-        run: |
-          IMAGE="${{ steps.ecr.outputs.registry }}/sales:${{ github.sha }}"
-          docker build -t "$IMAGE" .
-          docker push "$IMAGE"
-          aws lambda update-function-code \
-            --function-name sales \
-            --image-uri "$IMAGE"
-            --region ${{ secrets.AWS_REGION}}
+            --function-name ${{ matrix.lambda }} \
+            --image-uri "$IMAGE" \
+            --region ${{ secrets.AWS_REGION }}
