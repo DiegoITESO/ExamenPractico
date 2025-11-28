@@ -79,6 +79,8 @@ def lambda_handler(event, context):
                 client_id = event.get('pathParameters', {}).get('id')
                 if client_id:
                     response = clients_table.get_item(Key={'ID': client_id})
+                    if not response.get('Item'):
+                        return {'statusCode': 404, 'message': "Client not found"}
                     return {'statusCode': 200, 'body': json.dumps(response.get('Item', {}))}
                 else:
                     response = clients_table.scan()
