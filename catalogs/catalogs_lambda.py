@@ -1,6 +1,8 @@
 import json
 import boto3
 import uuid
+import os
+import time
 from decimal import Decimal
 
 dynamodb = boto3.resource('dynamodb')
@@ -8,6 +10,48 @@ clients_table = dynamodb.Table('Clients')
 addresses_table = dynamodb.Table('Addresses')
 products_table = dynamodb.Table('Products')
 
+cloudwatch = boto3.client("cloudwatch")
+ENV = os.getenv("ENVIRONMENT", "local")
+def instrumented(handler):
+    def wrapper(event, context):
+        start = time.time()
+
+        try:
+            response = handler(event, context)
+        except Exception as e:
+            send_metric("HTTP_5XX", 1)
+            raise
+
+        duration = (time.time() - start) * 1000
+
+        status = response.get("statusCode", 200)
+        if 200 <= status < 300:
+            send_metric("HTTP_2XX", 1)
+        elif 400 <= status < 500:
+            send_metric("HTTP_4XX", 1)
+        else:
+            send_metric("HTTP_5XX", 1)
+
+        send_metric("LatencyMs", duration, unit="Milliseconds")
+
+        return response
+
+    return wrapper
+
+
+def send_metric(name, value, unit="Count"):
+    cloudwatch.put_metric_data(
+        Namespace=f"MyApp-{ENV}",
+        MetricData=[
+            {
+                "MetricName": name,
+                "Value": value,
+                "Unit": unit
+            }
+        ]
+    )
+
+@instrumented
 def lambda_handler(event, context):
     http_method = event.get("requestContext", {}).get("http", {}).get("method")
     path = event.get("routeKey", "")

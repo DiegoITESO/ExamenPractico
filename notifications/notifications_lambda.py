@@ -1,9 +1,53 @@
 import json
+import time
 import boto3
+import os
+
 
 sns = boto3.client('sns')
 TOPIC_ARN = 'arn:aws:sns:us-east-1:470813633828:Notas'
+cloudwatch = boto3.client("cloudwatch")
+ENV = os.getenv("ENVIRONMENT", "local")
+def instrumented(handler):
+    def wrapper(event, context):
+        start = time.time()
 
+        try:
+            response = handler(event, context)
+        except Exception as e:
+            send_metric("HTTP_5XX", 1)
+            raise
+
+        duration = (time.time() - start) * 1000
+
+        status = response.get("statusCode", 200)
+        if 200 <= status < 300:
+            send_metric("HTTP_2XX", 1)
+        elif 400 <= status < 500:
+            send_metric("HTTP_4XX", 1)
+        else:
+            send_metric("HTTP_5XX", 1)
+
+        send_metric("LatencyMs", duration, unit="Milliseconds")
+
+        return response
+
+    return wrapper
+
+
+def send_metric(name, value, unit="Count"):
+    cloudwatch.put_metric_data(
+        Namespace=f"MyApp-{ENV}",
+        MetricData=[
+            {
+                "MetricName": name,
+                "Value": value,
+                "Unit": unit
+            }
+        ]
+    )
+
+@instrumented
 def lambda_handler(event, context):
     """
     Handler for sending email notifications.
