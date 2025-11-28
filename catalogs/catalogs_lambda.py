@@ -28,16 +28,20 @@ def lambda_handler(event, context):
                 return {'statusCode': 200, 'body': json.dumps({'ID': client_id})}
             
             elif http_method == 'GET':
-                if event.get('queryStringParameters') and 'ID' in event['queryStringParameters']:
-                    response = clients_table.get_item(Key={'ID': event['queryStringParameters']['ID']})
+                client_id = event.get('pathParameters', {}).get('id')
+                if client_id:
+                    response = clients_table.get_item(Key={'ID': client_id})
                     return {'statusCode': 200, 'body': json.dumps(response.get('Item', {}))}
                 else:
                     response = clients_table.scan()
                     return {'statusCode': 200, 'body': json.dumps(response['Items'])}
             
             elif http_method == 'PUT':
+                client_id = event.get('pathParameters', {}).get('id')
+                if not client_id:
+                     return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID in path'})}
                 clients_table.update_item(
-                    Key={'ID': body['ID']},
+                    Key={'ID': client_id},
                     UpdateExpression='SET RazonSocial = :rs, NombreComercial = :nc, RFC = :rfc, CorreoElectronico = :ce, Telefono = :tel',
                     ExpressionAttributeValues={
                         ':rs': body['RazonSocial'],
@@ -50,7 +54,10 @@ def lambda_handler(event, context):
                 return {'statusCode': 200, 'body': json.dumps({'message': 'Client updated'})}
             
             elif http_method == 'DELETE':
-                clients_table.delete_item(Key={'ID': body['ID']})
+                client_id = event.get('pathParameters', {}).get('id')
+                if not client_id:
+                     return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID in path'})}
+                clients_table.delete_item(Key={'ID': client_id})
                 return {'statusCode': 200, 'body': json.dumps({'message': 'Client deleted'})}
 
         elif '/addresses' in path:
@@ -67,16 +74,20 @@ def lambda_handler(event, context):
                 return {'statusCode': 200, 'body': json.dumps({'ID': address_id})}
             
             elif http_method == 'GET':
-                if event.get('queryStringParameters') and 'ID' in event['queryStringParameters']:
-                    response = addresses_table.get_item(Key={'ID': event['queryStringParameters']['ID']})
+                address_id = event.get('pathParameters', {}).get('id')
+                if address_id:
+                    response = addresses_table.get_item(Key={'ID': address_id})
                     return {'statusCode': 200, 'body': json.dumps(response.get('Item', {}))}
                 else:
                     response = addresses_table.scan()
                     return {'statusCode': 200, 'body': json.dumps(response['Items'])}
             
             elif http_method == 'PUT':
+                address_id = event.get('pathParameters', {}).get('id')
+                if not address_id:
+                     return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID in path'})}
                 addresses_table.update_item(
-                    Key={'ID': body['ID']},
+                    Key={'ID': address_id},
                     UpdateExpression='SET Domicilio = :d, Colonia = :c, Municipio = :m, Estado = :e, TipoDireccion = :td',
                     ExpressionAttributeValues={
                         ':d': body['Domicilio'],
@@ -89,7 +100,10 @@ def lambda_handler(event, context):
                 return {'statusCode': 200, 'body': json.dumps({'message': 'Address updated'})}
             
             elif http_method == 'DELETE':
-                addresses_table.delete_item(Key={'ID': body['ID']})
+                address_id = event.get('pathParameters', {}).get('id')
+                if not address_id:
+                     return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID in path'})}
+                addresses_table.delete_item(Key={'ID': address_id})
                 return {'statusCode': 200, 'body': json.dumps({'message': 'Address deleted'})}
 
         elif '/products' in path:
@@ -104,16 +118,20 @@ def lambda_handler(event, context):
                 return {'statusCode': 200, 'body': json.dumps({'ID': product_id})}
             
             elif http_method == 'GET':
-                if event.get('queryStringParameters') and 'ID' in event['queryStringParameters']:
-                    response = products_table.get_item(Key={'ID': event['queryStringParameters']['ID']})
+                product_id = event.get('pathParameters', {}).get('id')
+                if product_id:
+                    response = products_table.get_item(Key={'ID': product_id})
                     return {'statusCode': 200, 'body': json.dumps(decimal_to_native(response.get('Item', {})))}
                 else:
                     response = products_table.scan()
                     return {'statusCode': 200, 'body': json.dumps(decimal_to_native(response['Items']))}
             
             elif http_method == 'PUT':
+                product_id = event.get('pathParameters', {}).get('id')
+                if not product_id:
+                     return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID in path'})}
                 products_table.update_item(
-                    Key={'ID': body['ID']},
+                    Key={'ID': product_id},
                     UpdateExpression='SET Nombre = :n, UnidadMedida = :um, PrecioBase = :pb',
                     ExpressionAttributeValues={
                         ':n': body['Nombre'],
@@ -124,7 +142,10 @@ def lambda_handler(event, context):
                 return {'statusCode': 200, 'body': json.dumps({'message': 'Product updated'})}
             
             elif http_method == 'DELETE':
-                products_table.delete_item(Key={'ID': body['ID']})
+                product_id = event.get('pathParameters', {}).get('id')
+                if not product_id:
+                     return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID in path'})}
+                products_table.delete_item(Key={'ID': product_id})
                 return {'statusCode': 200, 'body': json.dumps({'message': 'Product deleted'})}
 
         return {'statusCode': 400, 'body': json.dumps({'error': 'Invalid path or method'})}

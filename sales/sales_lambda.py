@@ -45,7 +45,9 @@ def lambda_handler(event, context):
                 return {'statusCode': 200, 'body': json.dumps({'ID': note_id, 'Folio': folio})}
 
             elif http_method == 'GET':
-                note_id = event['queryStringParameters']['ID']
+                note_id = event.get('pathParameters', {}).get('id')
+                if not note_id:
+                     return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID in path'})}
                 # The original code had a return statement here that returned just the note.
                 # Then it had unreachable code that fetched items and client.
                 # I will implement the full response as likely intended (Note + Items + Client).
@@ -137,7 +139,7 @@ def lambda_handler(event, context):
                 )
 
                 # Invoke Notification Lambda
-                s3_link = f'https://eg7ceanvbe.execute-api.us-east-1.amazonaws.com/pdf_note?ID={note_id}'
+                s3_link = f'https://eg7ceanvbe.execute-api.us-east-1.amazonaws.com/pdf_note/{note_id}'
                 notification_payload = {
                     'client': decimal_to_native(client),
                     'folio': note['Folio'],
@@ -157,7 +159,7 @@ def lambda_handler(event, context):
                 }
 
         elif '/pdf_note' in path and http_method == 'GET':
-            note_id = event['queryStringParameters']['ID']
+            note_id = event.get('pathParameters', {}).get('id')
             if not note_id:
                 return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID parameter'})}
             note_resp = sales_notes_table.get_item(Key={'ID': note_id})
