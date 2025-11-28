@@ -37,7 +37,7 @@ def lambda_handler(event, context):
 
                 note_id = str(uuid.uuid4())
                 folio = str(uuid.uuid4())[:8]
-                total = Decimal(str(body.get('Total', 0)))
+                total = Decimal(str(0))
                 sales_notes_table.put_item(Item={
                     'ID': note_id,
                     'Folio': folio,
