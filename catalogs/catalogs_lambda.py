@@ -1,0 +1,142 @@
+import json
+import boto3
+import uuid
+from decimal import Decimal
+
+dynamodb = boto3.resource('dynamodb')
+clients_table = dynamodb.Table('Clients')
+addresses_table = dynamodb.Table('Addresses')
+products_table = dynamodb.Table('Products')
+
+def lambda_handler(event, context):
+    http_method = event.get("requestContext", {}).get("http", {}).get("method")
+    path = event.get("routeKey", "")
+    body = json.loads(event.get('body', '{}')) if event.get('body') else {}
+
+    try:
+        if '/clients' in path:
+            if http_method == 'POST':
+                client_id = str(uuid.uuid4())
+                clients_table.put_item(Item={
+                    'ID': client_id,
+                    'RazonSocial': body['RazonSocial'],
+                    'NombreComercial': body['NombreComercial'],
+                    'RFC': body['RFC'],
+                    'CorreoElectronico': body['CorreoElectronico'],
+                    'Telefono': body['Telefono']
+                })
+                return {'statusCode': 200, 'body': json.dumps({'ID': client_id})}
+            
+            elif http_method == 'GET':
+                if event.get('queryStringParameters') and 'ID' in event['queryStringParameters']:
+                    response = clients_table.get_item(Key={'ID': event['queryStringParameters']['ID']})
+                    return {'statusCode': 200, 'body': json.dumps(response.get('Item', {}))}
+                else:
+                    response = clients_table.scan()
+                    return {'statusCode': 200, 'body': json.dumps(response['Items'])}
+            
+            elif http_method == 'PUT':
+                clients_table.update_item(
+                    Key={'ID': body['ID']},
+                    UpdateExpression='SET RazonSocial = :rs, NombreComercial = :nc, RFC = :rfc, CorreoElectronico = :ce, Telefono = :tel',
+                    ExpressionAttributeValues={
+                        ':rs': body['RazonSocial'],
+                        ':nc': body['NombreComercial'],
+                        ':rfc': body['RFC'],
+                        ':ce': body['CorreoElectronico'],
+                        ':tel': body['Telefono']
+                    }
+                )
+                return {'statusCode': 200, 'body': json.dumps({'message': 'Client updated'})}
+            
+            elif http_method == 'DELETE':
+                clients_table.delete_item(Key={'ID': body['ID']})
+                return {'statusCode': 200, 'body': json.dumps({'message': 'Client deleted'})}
+
+        elif '/addresses' in path:
+            if http_method == 'POST':
+                address_id = str(uuid.uuid4())
+                addresses_table.put_item(Item={
+                    'ID': address_id,
+                    'Domicilio': body['Domicilio'],
+                    'Colonia': body['Colonia'],
+                    'Municipio': body['Municipio'],
+                    'Estado': body['Estado'],
+                    'TipoDireccion': body['TipoDireccion']
+                })
+                return {'statusCode': 200, 'body': json.dumps({'ID': address_id})}
+            
+            elif http_method == 'GET':
+                if event.get('queryStringParameters') and 'ID' in event['queryStringParameters']:
+                    response = addresses_table.get_item(Key={'ID': event['queryStringParameters']['ID']})
+                    return {'statusCode': 200, 'body': json.dumps(response.get('Item', {}))}
+                else:
+                    response = addresses_table.scan()
+                    return {'statusCode': 200, 'body': json.dumps(response['Items'])}
+            
+            elif http_method == 'PUT':
+                addresses_table.update_item(
+                    Key={'ID': body['ID']},
+                    UpdateExpression='SET Domicilio = :d, Colonia = :c, Municipio = :m, Estado = :e, TipoDireccion = :td',
+                    ExpressionAttributeValues={
+                        ':d': body['Domicilio'],
+                        ':c': body['Colonia'],
+                        ':m': body['Municipio'],
+                        ':e': body['Estado'],
+                        ':td': body['TipoDireccion']
+                    }
+                )
+                return {'statusCode': 200, 'body': json.dumps({'message': 'Address updated'})}
+            
+            elif http_method == 'DELETE':
+                addresses_table.delete_item(Key={'ID': body['ID']})
+                return {'statusCode': 200, 'body': json.dumps({'message': 'Address deleted'})}
+
+        elif '/products' in path:
+            if http_method == 'POST':
+                product_id = str(uuid.uuid4())
+                products_table.put_item(Item={
+                    'ID': product_id,
+                    'Nombre': body['Nombre'],
+                    'UnidadMedida': body['UnidadMedida'],
+                    'PrecioBase': Decimal(str(body['PrecioBase']))
+                })
+                return {'statusCode': 200, 'body': json.dumps({'ID': product_id})}
+            
+            elif http_method == 'GET':
+                if event.get('queryStringParameters') and 'ID' in event['queryStringParameters']:
+                    response = products_table.get_item(Key={'ID': event['queryStringParameters']['ID']})
+                    return {'statusCode': 200, 'body': json.dumps(decimal_to_native(response.get('Item', {})))}
+                else:
+                    response = products_table.scan()
+                    return {'statusCode': 200, 'body': json.dumps(decimal_to_native(response['Items']))}
+            
+            elif http_method == 'PUT':
+                products_table.update_item(
+                    Key={'ID': body['ID']},
+                    UpdateExpression='SET Nombre = :n, UnidadMedida = :um, PrecioBase = :pb',
+                    ExpressionAttributeValues={
+                        ':n': body['Nombre'],
+                        ':um': body['UnidadMedida'],
+                        ':pb': Decimal(str(body['PrecioBase']))
+                    }
+                )
+                return {'statusCode': 200, 'body': json.dumps({'message': 'Product updated'})}
+            
+            elif http_method == 'DELETE':
+                products_table.delete_item(Key={'ID': body['ID']})
+                return {'statusCode': 200, 'body': json.dumps({'message': 'Product deleted'})}
+
+        return {'statusCode': 400, 'body': json.dumps({'error': 'Invalid path or method'})}
+
+    except Exception as e:
+        return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
+
+def decimal_to_native(obj):
+    if isinstance(obj, list):
+        return [decimal_to_native(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: decimal_to_native(v) for k, v in obj.items()}
+    elif isinstance(obj, Decimal):
+        return int(obj) if obj % 1 == 0 else float(obj)
+    return obj

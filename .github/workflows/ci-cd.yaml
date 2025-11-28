@@ -1,0 +1,62 @@
+name: CI-CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  CD:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN}}
+          aws-region: ${{ secrets.AWS_REGION}}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & Push catalogs
+        working-directory: ./catalogs
+        run: |
+          IMAGE="${{ steps.ecr.outputs.registry }}/catalogs:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          aws lambda update-function-code \
+            --function-name catalogs \
+            --image-uri "$IMAGE"
+            --region ${{ secrets.AWS_REGION}}
+
+      - name: Build & Push notifications
+        working-directory: ./notifications
+        run: |
+          IMAGE="${{ steps.ecr.outputs.registry }}/notifications:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          aws lambda update-function-code \
+            --function-name notifications \
+            --image-uri "$IMAGE"
+            --region ${{ secrets.AWS_REGION}}
+
+      - name: Build & Push sales
+        working-directory: ./sales
+        run: |
+          IMAGE="${{ steps.ecr.outputs.registry }}/sales:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          aws lambda update-function-code \
+            --function-name sales \
+            --image-uri "$IMAGE"
+            --region ${{ secrets.AWS_REGION}}
