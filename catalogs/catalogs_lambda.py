@@ -74,7 +74,8 @@ def lambda_handler(event, context):
                 required_fields = ['Domicilio', 'Colonia', 'Municipio', 'Estado', 'TipoDireccion']
                 if not all(field in body for field in required_fields):
                     return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
-
+                if body['TipoDireccion'] != 'Facturacion' and body['TipoDireccion'] != 'Envio':
+                    return {'statusCode': 400, 'body': 'Address type must be either Facturacion or Envio'}
                 address_id = str(uuid.uuid4())
                 addresses_table.put_item(Item={
                     'ID': address_id,
@@ -103,6 +104,8 @@ def lambda_handler(event, context):
                 required_fields = ['Domicilio', 'Colonia', 'Municipio', 'Estado', 'TipoDireccion']
                 if not all(field in body for field in required_fields):
                     return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
+                if body['TipoDireccion'] != 'Facturacion' and body['TipoDireccion'] != 'Envio':
+                    return {'statusCode': 400, 'body': 'Address type must be either Facturacion or Envio'}
 
                 addresses_table.update_item(
                     Key={'ID': address_id},
