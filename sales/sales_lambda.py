@@ -164,7 +164,7 @@ def lambda_handler(event, context):
                 )
 
                 # Invoke Notification Lambda
-                s3_link = f'https://eg7ceanvbe.execute-api.us-east-1.amazonaws.com/pdf_note/{note_id}'
+                s3_link = f'https://41iqxbksll.execute-api.us-east-1.amazonaws.com/pdf_note/{note_id}'
                 notification_payload = {
                     'client': decimal_to_native(client),
                     'folio': note['Folio'],
