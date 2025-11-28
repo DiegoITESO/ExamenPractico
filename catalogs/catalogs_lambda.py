@@ -16,6 +16,10 @@ def lambda_handler(event, context):
     try:
         if '/clients' in path:
             if http_method == 'POST':
+                required_fields = ['RazonSocial', 'NombreComercial', 'RFC', 'CorreoElectronico', 'Telefono']
+                if not all(field in body for field in required_fields):
+                    return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
+
                 client_id = str(uuid.uuid4())
                 clients_table.put_item(Item={
                     'ID': client_id,
@@ -40,6 +44,11 @@ def lambda_handler(event, context):
                 client_id = event.get('pathParameters', {}).get('id')
                 if not client_id:
                      return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID in path'})}
+                
+                required_fields = ['RazonSocial', 'NombreComercial', 'RFC', 'CorreoElectronico', 'Telefono']
+                if not all(field in body for field in required_fields):
+                    return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
+
                 clients_table.update_item(
                     Key={'ID': client_id},
                     UpdateExpression='SET RazonSocial = :rs, NombreComercial = :nc, RFC = :rfc, CorreoElectronico = :ce, Telefono = :tel',
@@ -62,6 +71,10 @@ def lambda_handler(event, context):
 
         elif '/addresses' in path:
             if http_method == 'POST':
+                required_fields = ['Domicilio', 'Colonia', 'Municipio', 'Estado', 'TipoDireccion']
+                if not all(field in body for field in required_fields):
+                    return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
+
                 address_id = str(uuid.uuid4())
                 addresses_table.put_item(Item={
                     'ID': address_id,
@@ -86,6 +99,11 @@ def lambda_handler(event, context):
                 address_id = event.get('pathParameters', {}).get('id')
                 if not address_id:
                      return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID in path'})}
+
+                required_fields = ['Domicilio', 'Colonia', 'Municipio', 'Estado', 'TipoDireccion']
+                if not all(field in body for field in required_fields):
+                    return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
+
                 addresses_table.update_item(
                     Key={'ID': address_id},
                     UpdateExpression='SET Domicilio = :d, Colonia = :c, Municipio = :m, Estado = :e, TipoDireccion = :td',
@@ -108,6 +126,10 @@ def lambda_handler(event, context):
 
         elif '/products' in path:
             if http_method == 'POST':
+                required_fields = ['Nombre', 'UnidadMedida', 'PrecioBase']
+                if not all(field in body for field in required_fields):
+                    return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
+
                 product_id = str(uuid.uuid4())
                 products_table.put_item(Item={
                     'ID': product_id,
@@ -130,6 +152,11 @@ def lambda_handler(event, context):
                 product_id = event.get('pathParameters', {}).get('id')
                 if not product_id:
                      return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID in path'})}
+
+                required_fields = ['Nombre', 'UnidadMedida', 'PrecioBase']
+                if not all(field in body for field in required_fields):
+                    return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
+
                 products_table.update_item(
                     Key={'ID': product_id},
                     UpdateExpression='SET Nombre = :n, UnidadMedida = :um, PrecioBase = :pb',

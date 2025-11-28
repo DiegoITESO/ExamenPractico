@@ -31,6 +31,10 @@ def lambda_handler(event, context):
     try:
         if '/sales_notes' in path:
             if http_method == 'POST':
+                required_fields = ['ClienteID', 'DireccionFacturacionID', 'DireccionEnvioID']
+                if not all(field in body for field in required_fields):
+                    return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
+
                 note_id = str(uuid.uuid4())
                 folio = str(uuid.uuid4())[:8]
                 total = Decimal(str(body.get('Total', 0)))
@@ -87,6 +91,9 @@ def lambda_handler(event, context):
 
         elif '/sales_note_items' in path:
             if http_method == 'POST':
+                required_fields = ['SalesNoteID', 'Items']
+                if not all(field in body for field in required_fields):
+                    return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
                 note_id = body['SalesNoteID']
                 items = body['Items']
                 for item in items:
