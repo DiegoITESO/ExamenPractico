@@ -59,9 +59,6 @@ def lambda_handler(event, context):
     }
     """
     try:
-        # If invoked asynchronously, the event is the payload.
-        # If invoked via API Gateway, the payload is in body.
-        # Assuming direct invocation or payload is the event itself for simplicity in internal calls.
         payload = event
         if 'body' in event:
              try:

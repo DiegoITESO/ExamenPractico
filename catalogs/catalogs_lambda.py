@@ -90,7 +90,7 @@ def lambda_handler(event, context):
                 client_id = event.get('pathParameters', {}).get('id')
                 if not client_id:
                      return {'statusCode': 400, 'body': json.dumps({'error': 'Missing ID in path'})}
-                
+
                 required_fields = ['RazonSocial', 'NombreComercial', 'RFC', 'CorreoElectronico', 'Telefono']
                 if not all(field in body for field in required_fields):
                     return {'statusCode': 400, 'body': json.dumps({'error': 'Missing required fields: ' + ', '.join([f for f in required_fields if f not in body])})}
