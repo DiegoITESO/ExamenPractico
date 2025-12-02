@@ -11,7 +11,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from botocore.exceptions import ClientError
-from io import BytesIOv
+from io import BytesIO
 
 dynamodb = boto3.resource('dynamodb')
 s3 = boto3.client('s3')
